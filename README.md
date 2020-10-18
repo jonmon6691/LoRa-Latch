@@ -12,3 +12,6 @@ receiving a signal via a LoRa module.
 Check out my LoRa Boilerplate project for details on how I built these modules  
 [https://github.com/jonmon6691/arduino_lora_boilerplate](https://github.com/jonmon6691/arduino_lora_boilerplate)
 
+### Wiring
+![Latch control wiring diagram](docs/latch_control_wiring.jpg)
+
