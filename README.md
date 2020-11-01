@@ -24,6 +24,10 @@ The AC supply is 60Hz 13VRMS, and to find the peak-to-peak voltage we just multi
 sqrt(2), which ends up being 18V. In fact, knowing this helped me pick the relay!
 [J104D2C12VDC.20S](https://www.citrelay.com/Catalog%20Pages/RelayCatalog/J104D.pdf)
 
+Looking at the datasheet, we can see that the coil is **720Ohms** and the minimum voltage needed to activate the relay is **9V**
+
+![Datasheet crop](docs/relay_data.png)
+
 Now that we know the voltage, and the load (coil of the chosen relay), we can
 do some simulation to check and see if some spare capacitors I have will do the job!
 
