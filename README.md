@@ -15,3 +15,16 @@ Check out my LoRa Boilerplate project for details on how I built these modules
 ### Wiring
 ![Latch control wiring diagram](docs/latch_control_wiring.jpg)
 
+### Choosing the capacitor
+The capacitor in this circuit, along with the diode, from a half-bridge rectifier.
+Because the buzzer is an AC signal, we need to rectify it to DC in order to drive
+the relay coil.
+
+The AC supply is 60Hz 13VRMS, and to find the peak-to-peak voltage we just multiply by
+sqrt(2), which ends up being 18V. In fact, knowing this helped me pick the relay!
+[J104D2C12VDC.20S](https://www.citrelay.com/Catalog%20Pages/RelayCatalog/J104D.pdf)
+
+Now that we know the voltage, and the load (coil of the chosen relay), we can
+do some simulation to check and see if some spare capacitors I have will do the job!
+
+![Simulation gif](docs/hbr_sim.gif)
