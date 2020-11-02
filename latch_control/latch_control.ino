@@ -38,18 +38,25 @@ void loop() {
   char next = Serial.read();
   process_character(next);
   
-  if (millis() > hold_latch) {
+  unsinged long t = millis();
+  
+  // Overflow detection is a bit naieve. If either timer spans the ovreflow value it will get cut short.
+  // A better way to do it is finding some way to maintain the timer over the overflow threshold
+  if (hold_latch > t && hold_latch - t > HOLD_TIME_MS) { // Detect overflow
+      hold_latch = t;
+  }
+  if (radio_unlock > t && radio_unlock - t > RADIO_UNLOCK_TIME_MS) { // Detect overflow
+      radio_unlock = t;
+  }
+  
+  if (t > hold_latch) {
     digitalWrite(LATCH_PIN, LOW);
-    if (!digitalRead(BUZZER_PIN)&& radio_unlock > millis()) {
-      hold_latch = millis() + HOLD_TIME_MS;
+    if (!digitalRead(BUZZER_PIN) && radio_unlock > t) {
+      hold_latch = t + HOLD_TIME_MS;
     }
   } else {
-    if (hold_latch - millis() > HOLD_TIME_MS) { // Detect overflow
-      hold_latch = 0;
-    } else {
-      digitalWrite(LATCH_PIN, HIGH);
-    }
-    radio_unlock = 0;
+    digitalWrite(LATCH_PIN, HIGH); // Open door
+    radio_unlock = t; // Reset radio lock after door is opened
   }
 }
 
