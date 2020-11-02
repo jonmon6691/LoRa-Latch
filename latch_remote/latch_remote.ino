@@ -1,7 +1,6 @@
-/************** lora_boilerplate ***************
- *    Simple skeleton to interface with a 
- *    Reyax RYLR896 Serial LoRa module
- *          Jon Wallace 2020
+/********************** latch_remote ************************
+ *    LoRa beacon that announces it presence periodically
+ *                   Jon Wallace 2020
  */
 
 // Accomodate a maximum length response (Recieve 240 bytes)
@@ -11,14 +10,24 @@ char res_buff[MAX_RES_SIZE];
 // global index for the response buffer is needed since input is processed one byte per loop()
 int  res_i = 0;
 
+#define BEACON_PERIOD_MS 1000 // Send ping every second
+unsigned long beacon;
+
 void setup() {
   Serial.begin(115200); 
   pinMode(LED_BUILTIN, OUTPUT);
+
+  beacon = 0;
 }
 
 void loop() {
   char next = Serial.read();
   process_character(next);
+
+  if (millis() > beacon) {
+    beacon = millis() + BEACON_PERIOD_MS;
+    Serial.print("AT+SEND=0,11,OPEN SESAME\r\n");
+  }
 }
 
 void process_character(char next) {
@@ -48,26 +57,11 @@ const char *RES_STRINGS[N_RES] = {"+READY", "+ERR=", "+OK", "+RCV="};
 
 void process_response() {
   switch (parse_response()) {
-    case RES_READY:
-      Serial.print("AT+SEND=0,6,ONLINE\r\n");
-      break;
-      
-    case RES_ERR: print_error(); break;
-    case RES_OK: Serial.println("RES_OK"); break;
-    
-    case RES_RCV:
-      //Serial.print("Incoming: ");
-      //Serial.print(res_buff);
-      //Serial.print("\r\n");
-      Serial.print("AT+SEND=0,4,PONG\r\n");
-      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      break;
-      
-    case UNKNOWN_RESPONSE:
-      Serial.print("UNKNOWN_RESPONSE: ");
-      Serial.print(res_buff);
-      break;
-      
+    case RES_READY: break;
+    case RES_ERR: break; //print_error(); break;
+    case RES_OK: break;
+    case RES_RCV: break;
+    case UNKNOWN_RESPONSE: break;
     default: break;
   }
 }
