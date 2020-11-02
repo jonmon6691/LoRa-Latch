@@ -1,6 +1,6 @@
-/************** lora_boilerplate ***************
- *    Simple skeleton to interface with a 
- *    Reyax RYLR896 Serial LoRa module
+/************** latch_control ***************
+ *    Interface module to a central buzzer
+ *    and door latch system in some apts
  *          Jon Wallace 2020
  */
 
@@ -11,14 +11,45 @@ char res_buff[MAX_RES_SIZE];
 // global index for the response buffer is needed since input is processed one byte per loop()
 int  res_i = 0;
 
+#define LATCH_PIN 8
+#define BUZZER_PIN 6
+
+#define RADIO_UNLOCK_TIME_MS ((unsigned long) 5*60*1000) // Buzzer unlock is active for 5 minutes since last radio contact
+#define HOLD_TIME_MS 3 * 1000 // Hold the door latch for 3 seconds after pressing the buzzer
+
+unsigned long radio_unlock;
+unsigned long hold_latch;
+
 void setup() {
   Serial.begin(115200); 
   pinMode(LED_BUILTIN, OUTPUT);
+  
+  digitalWrite(LATCH_PIN, LOW);    // Door latch relay driver
+  pinMode(LATCH_PIN, OUTPUT);
+  
+  pinMode(BUZZER_PIN, INPUT);      // Buzzer detect pull-up resistor
+  digitalWrite(BUZZER_PIN, HIGH);
+
+  radio_unlock = 0;
+  hold_latch = 0;
 }
 
 void loop() {
   char next = Serial.read();
   process_character(next);
+  
+  if (millis() > hold_latch) {
+    digitalWrite(LATCH_PIN, LOW);
+    if (!digitalRead(BUZZER_PIN)&& radio_unlock > millis()) {
+      hold_latch = millis() + HOLD_TIME_MS;
+    }
+  } else {
+    if (hold_latch - millis() > HOLD_TIME_MS) { // Detect overflow
+      hold_latch = 0;
+    } else {
+      digitalWrite(LATCH_PIN, HIGH);
+    }
+  }
 }
 
 void process_character(char next) {
@@ -49,18 +80,15 @@ const char *RES_STRINGS[N_RES] = {"+READY", "+ERR=", "+OK", "+RCV="};
 void process_response() {
   switch (parse_response()) {
     case RES_READY:
-      Serial.print("AT+SEND=0,6,ONLINE\r\n");
       break;
       
     case RES_ERR: print_error(); break;
     case RES_OK: Serial.println("RES_OK"); break;
     
     case RES_RCV:
-      //Serial.print("Incoming: ");
-      //Serial.print(res_buff);
-      //Serial.print("\r\n");
-      Serial.print("AT+SEND=0,4,PONG\r\n");
-      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      radio_unlock = millis() + RADIO_UNLOCK_TIME_MS;
+      Serial.print("Unlocking until ");
+      Serial.println(radio_unlock);
       break;
       
     case UNKNOWN_RESPONSE:
