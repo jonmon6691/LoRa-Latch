@@ -49,6 +49,7 @@ void loop() {
     } else {
       digitalWrite(LATCH_PIN, HIGH);
     }
+    radio_unlock = 0;
   }
 }
 
