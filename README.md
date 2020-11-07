@@ -1,5 +1,5 @@
 # LoRa-Latch
-A remote keyless entry system for apartment door latches using Arduino and LoRa
+A remote keyless entry system for ancient apartment door latches using Arduino and LoRa
 
 ![Installed module](docs/latch_module_installed.jpg) ![Intercom](docs/intercom.jpg)
 
