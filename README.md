@@ -45,7 +45,7 @@ readily-available capacitor values:
 * **Add security:** right now, any LoRa message at all will trigger the unlock
 timer... Not good! The LoRa modules implement AES encryption so a nice
 challenge-response authentication could even be possible! The absolute
-obscurity of this installation, combined with how often the door is proped open
+obscurity of this installation, combined with how often the door is propped open
 anyway, make this a less critical problem for the time being.
 * **More efficient remote:** Add a battery and charger circuit so that the
 unlock code is only sent when the car is turned off. Right now, the unlock code
