@@ -54,3 +54,5 @@ is sent at all times while the car is on.
 * **Unlock via internet:** Having a web API available to unlock would open up
 possbilities for allowing delivery people in while away, or setting to unlock
 via the resident's phone in anticipation of visitors, etc.
+* **Pairing:** A run-time procedure can be done by the user to synchronize the
+security between the latch controller and the remote.
