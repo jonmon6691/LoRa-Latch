@@ -10,6 +10,8 @@ char res_buff[MAX_RES_SIZE];
 // global index for the response buffer is needed since input is processed one byte per loop()
 int  res_i = 0;
 
+#include "password.h"
+
 #define BEACON_PERIOD_MS 1000 // Send ping every second
 unsigned long beacon;
 
@@ -26,7 +28,7 @@ void loop() {
 
   if (millis() > beacon) {
     beacon = millis() + BEACON_PERIOD_MS;
-    Serial.print("AT+SEND=0,11,OPEN SESAME\r\n");
+    Serial.print("AT+SEND=0," PASSWORD_LEN_STR "," PASSWORD "\r\n");
   }
 }
 
