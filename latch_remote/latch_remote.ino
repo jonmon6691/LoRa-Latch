@@ -13,7 +13,11 @@ int  res_i = 0;
 unsigned long beacon;
 
 void setup() {
-  Serial.begin(115200); 
+  Serial.begin(115200);
+  Serial.println("\n");
+  Serial.println("Latch Remote");
+  Serial.println("See https://github.com/jonmon6691/LoRa-Latch for documentation.");
+  
   pinMode(LED_BUILTIN, OUTPUT);
 
   beacon = 0;
@@ -102,4 +106,3 @@ void print_error() {
     case 15: Serial.println("Error: Unknown error."); break;
   }
 }
-
