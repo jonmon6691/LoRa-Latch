@@ -42,7 +42,7 @@ readily-available capacitor values:
 ![Simulation gif](docs/hbr_sim.gif)
 
 ## Next steps
-* **Improve security:** Right now, the latch will unlock if it recieves a message
+* **Improve security:** Right now, the latch will unlock if it receives a message
 matching a static password, and it's sent in the clear... Not great! The LoRa
 modules implement AES encryption so a nice challenge-response authentication
 could even be possible! The absolute obscurity of this installation, combined
@@ -52,7 +52,7 @@ problem for the time being.
 unlock code is only sent when the car is turned off. Right now, the unlock code
 is sent at all times while the car is on.
 * **Unlock via internet:** Having a web API available to unlock would open up
-possbilities for allowing delivery people in while away, or setting to unlock
+possibilities for allowing delivery people in while away, or setting to unlock
 via the resident's phone in anticipation of visitors, etc.
 * **Pairing:** A run-time procedure can be done by the user to synchronize the
 security between the latch controller and the remote.

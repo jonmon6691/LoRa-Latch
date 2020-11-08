@@ -3,11 +3,8 @@
  *                   Jon Wallace 2020
  */
 
-// Accomodate a maximum length response (Recieve 240 bytes)
 #define MAX_RES_SIZE (8+5+1+3+1+240+1+3+1+2+2)
-// Response buffer, holds characters coming from the LoRa modules
 char res_buff[MAX_RES_SIZE];
-// global index for the response buffer is needed since input is processed one byte per loop()
 int  res_i = 0;
 
 #include "password.h"
@@ -93,15 +90,16 @@ void print_error() {
       Serial.print("Error: ");
       Serial.print(res_buff); // Just throw it back
       break;
-    // Errors 1&2 must be supressed since they are sent back any time Serial.println is used
+    // Errors 1&2 must be suppressed since they are sent back any time Serial.println is used
     case 1: break; // Serial.println("There is not \"enter\" or 0x0D 0x0A in the end of the AT Command.");
     case 2: break; // Serial.println("The head of AT command is not \"AT\" string.");
     case 3: Serial.println("Error: There is not \"=\" symbol in the AT command."); break;
-    case 4: Serial.println("Error: Unknow command."); break;
+    case 4: Serial.println("Error: Unknown command."); break;
     case 10: Serial.println("Error: TX is over times."); break;
     case 11: Serial.println("Error: RX is over times."); break;
     case 12: Serial.println("Error: CRC error."); break;
     case 13: Serial.println("Error: TX data more than 240bytes."); break;
-    case 15: Serial.println("Error: Unknow error."); break;
+    case 15: Serial.println("Error: Unknown error."); break;
   }
 }
+

@@ -4,12 +4,10 @@
  *          Jon Wallace 2020
  */
 
-// Accomodate a maximum length response (Recieve 240 bytes)
-#define MAX_RES_SIZE (8+5+1+3+1+240+1+3+1+2+2)
-// Response buffer, holds characters coming from the LoRa modules
+#define MAX_RES_SIZE (263)
 char res_buff[MAX_RES_SIZE];
-// global index for the response buffer is needed since input is processed one byte per loop()
 int res_i = 0;
+
 // Populated by process_rcv() in the RES_RCV case
 int rcv_addr;
 int rcv_len;
@@ -22,14 +20,14 @@ int rcv_snr;
 #define BUZZER_PIN 6
 
 #define RADIO_UNLOCK_TIME_MS ((unsigned long) 5*60*1000) // Buzzer unlock is active for 5 minutes since last radio contact
-#define HOLD_TIME_MS 3 * 1000 // Hold the door latch for 3 seconds after pressing the buzzer
+#define HOLD_TIME_MS ((unsigned long) 3 * 1000) // Hold the door latch for 3 seconds after pressing the buzzer
 
 unsigned long radio_unlock;
 unsigned long hold_latch;
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("");
+  Serial.println("\n");
   Serial.println("Latch Controller");
   Serial.println("See https://github.com/jonmon6691/LoRa-Latch for documentation.");
   
@@ -51,7 +49,7 @@ void loop() {
   
   unsigned long t = millis();
   
-  // Overflow detection is a bit naieve. If either timer spans the ovreflow value it will get cut short.
+  // Overflow detection is a bit naive. If either timer spans the overflow value it will get cut short.
   // A better way to do it is finding some way to maintain the timer over the overflow threshold
   if (hold_latch > t && hold_latch - t > HOLD_TIME_MS) { // Detect overflow
       hold_latch = t;
@@ -147,7 +145,7 @@ parse_response_match:
 
 void process_rcv() {
   sscanf(res_buff + RES_RCV_OFFSET, "%d,%d,%n", &rcv_addr, &rcv_len, &rcv_data_offset);
-  rcv_data_offset += RES_RCV_OFFSET; // Add in the offset for convinience
+  rcv_data_offset += RES_RCV_OFFSET; // Add in the offset for convenience
   sscanf(res_buff + rcv_data_offset, ",%d,%d", &rcv_rssi, &rcv_snr);
 }
 
@@ -160,15 +158,16 @@ void print_error() {
       Serial.print("Error: ");
       Serial.print(res_buff); // Just throw it back
       break;
-    // Errors 1&2 must be supressed since they are sent back any time Serial.println is used
+    // Errors 1&2 must be suppressed since they are sent back any time Serial.println is used
     case 1: break; // Serial.println("There is not \"enter\" or 0x0D 0x0A in the end of the AT Command.");
     case 2: break; // Serial.println("The head of AT command is not \"AT\" string.");
     case 3: Serial.println("Error: There is not \"=\" symbol in the AT command."); break;
-    case 4: Serial.println("Error: Unknow command."); break;
+    case 4: Serial.println("Error: Unknown command."); break;
     case 10: Serial.println("Error: TX is over times."); break;
     case 11: Serial.println("Error: RX is over times."); break;
     case 12: Serial.println("Error: CRC error."); break;
     case 13: Serial.println("Error: TX data more than 240bytes."); break;
-    case 15: Serial.println("Error: Unknow error."); break;
+    case 15: Serial.println("Error: Unknown error."); break;
   }
 }
+
