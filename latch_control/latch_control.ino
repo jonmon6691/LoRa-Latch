@@ -9,8 +9,15 @@
 // Response buffer, holds characters coming from the LoRa modules
 char res_buff[MAX_RES_SIZE];
 // global index for the response buffer is needed since input is processed one byte per loop()
-int  res_i = 0;
+int res_i = 0;
+// Populated by process_rcv() in the RES_RCV case
+int rcv_addr;
+int rcv_len;
+int rcv_data_offset;
+int rcv_rssi;
+int rcv_snr;
 
+#include "password.h"
 #define LATCH_PIN 8
 #define BUZZER_PIN 6
 
@@ -21,7 +28,11 @@ unsigned long radio_unlock;
 unsigned long hold_latch;
 
 void setup() {
-  Serial.begin(115200); 
+  Serial.begin(115200);
+  Serial.println("");
+  Serial.println("Latch Controller");
+  Serial.println("See https://github.com/jonmon6691/LoRa-Latch for documentation.");
+  
   pinMode(LED_BUILTIN, OUTPUT);
   
   digitalWrite(LATCH_PIN, LOW);    // Door latch relay driver
@@ -38,7 +49,7 @@ void loop() {
   char next = Serial.read();
   process_character(next);
   
-  unsinged long t = millis();
+  unsigned long t = millis();
   
   // Overflow detection is a bit naieve. If either timer spans the ovreflow value it will get cut short.
   // A better way to do it is finding some way to maintain the timer over the overflow threshold
@@ -58,6 +69,13 @@ void loop() {
     digitalWrite(LATCH_PIN, HIGH); // Open door
     radio_unlock = t; // Reset radio lock after door is opened
   }
+
+  if (radio_unlock > t) { // Blink the LED if unlocked
+    digitalWrite(LED_BUILTIN, (t / 250) % 2);
+  } else {
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+
 }
 
 void process_character(char next) {
@@ -84,6 +102,8 @@ void process_character(char next) {
 #define RES_RCV 3
 #define N_RES 4
 const char *RES_STRINGS[N_RES] = {"+READY", "+ERR=", "+OK", "+RCV="};
+#define RES_ERR_OFFSET 5
+#define RES_RCV_OFFSET 5
 
 void process_response() {
   switch (parse_response()) {
@@ -94,9 +114,12 @@ void process_response() {
     case RES_OK: Serial.println("RES_OK"); break;
     
     case RES_RCV:
-      radio_unlock = millis() + RADIO_UNLOCK_TIME_MS;
-      Serial.print("Unlocking until ");
-      Serial.println(radio_unlock);
+      process_rcv();
+      if (rcv_len == PASSWORD_LEN && strncmp(res_buff+rcv_data_offset, PASSWORD, rcv_len) == 0) {
+        radio_unlock = millis() + RADIO_UNLOCK_TIME_MS;
+        Serial.print("Unlocking until ");
+        Serial.println(radio_unlock);
+      }
       break;
       
     case UNKNOWN_RESPONSE:
@@ -122,11 +145,15 @@ parse_response_match:
   return res;
 }
 
+void process_rcv() {
+  sscanf(res_buff + RES_RCV_OFFSET, "%d,%d,%n", &rcv_addr, &rcv_len, &rcv_data_offset);
+  rcv_data_offset += RES_RCV_OFFSET; // Add in the offset for convinience
+  sscanf(res_buff + rcv_data_offset, ",%d,%d", &rcv_rssi, &rcv_snr);
+}
+
 void print_error() {
-  char a = res_buff[5];
-  int err = (a >= '0' && a <= '9') ? a - '0' : -1;
-  a = res_buff[6];
-  if (a >= '0' && a <= '9') err = 10*err + (a - '0');
+  int err;
+  sscanf(res_buff + RES_ERR_OFFSET, "%d", &err);
   switch(err) {
     default:
     case -1: // Couldn't parse the error number
