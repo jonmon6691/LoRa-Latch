@@ -12,6 +12,10 @@ int  res_i = 0;
 #define BEACON_PERIOD_MS 1000 // Send ping every second
 unsigned long beacon;
 
+#define CAR_ON_PIN (7) // Connected to the "USB" pin on the boost/charger
+#define TRANSMIT_AFTER_CAR_OFF_MS (15000) // Stop transmitting 15 seconds after car is turned off
+unsigned long transmit_limit;
+
 void setup() {
   Serial.begin(115200);
   Serial.println("\n");
@@ -19,15 +23,24 @@ void setup() {
   Serial.println("See https://github.com/jonmon6691/LoRa-Latch for documentation.");
   
   pinMode(LED_BUILTIN, OUTPUT);
-
+  pinMode(CAR_ON_PIN, INPUT);
+  
   beacon = 0;
+  transmit_limit = 0;
 }
 
 void loop() {
   char next = Serial.read();
   process_character(next);
 
-  if (millis() > beacon) {
+  bool car_on = digitalRead(CAR_ON_PIN);
+  unsigned long now = millis();
+  
+  if (car_on == HIGH) {
+    transmit_limit = now + TRANSMIT_AFTER_CAR_OFF_MS;
+  }
+
+  if (car_on == LOW && now < transmit_limit && now > beacon) {
     beacon = millis() + BEACON_PERIOD_MS;
     Serial.print("AT+SEND=0," PASSWORD_LEN_STR "," PASSWORD "\r\n");
   }
