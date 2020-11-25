@@ -20,7 +20,7 @@ int rcv_snr;
 #define BUZZER_PIN 6
 
 #define RADIO_UNLOCK_TIME_MS ((unsigned long) 5*60*1000) // Buzzer unlock is active for 5 minutes since last radio contact
-#define HOLD_TIME_MS ((unsigned long) 3 * 1000) // Hold the door latch for 3 seconds after pressing the buzzer
+#define HOLD_TIME_MS ((unsigned long) 1 * 1000) // Hold the door latch for 3 seconds after pressing the buzzer
 
 unsigned long radio_unlock;
 unsigned long hold_latch;
@@ -170,4 +170,3 @@ void print_error() {
     case 15: Serial.println("Error: Unknown error."); break;
   }
 }
-
