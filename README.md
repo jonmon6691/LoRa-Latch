@@ -1,7 +1,7 @@
 # LoRa-Latch
 A remote keyless entry system for ancient apartment door latches using Arduino and LoRa
 
-![Installed module](docs/latch_module_installed.jpg) ![Intercom](docs/intercom.jpg)
+![Installed module](docs/latch_control_installed.jpg) ![Intercom](docs/intercom.jpg)
 
 ## Context
 Older apartment buildings have hard-wired intercom systems that allow visitors
@@ -28,7 +28,7 @@ Check out the LoRa Boilerplate project for details on how these modules are buil
 ## Latch Module Wiring
 ![Latch control wiring diagram](docs/latch_control_wiring.jpg)
 
-![Latch module photo](docs/latch_module_front.jpg) ![Latch module photo](docs/latch_module_back.jpg)
+![Latch module photo](docs/latch_control_front.jpg) ![Latch module photo](docs/latch_control_back.jpg)
 ![Intercom wiring](docs/intercom_wiring.jpg)
 ### Designing the half-bridge rectifier
 * The latch module uses a relay and a half bridge rectifier in order to detect
