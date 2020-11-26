@@ -52,12 +52,10 @@ The latch remote waits until USB power is removed before it starts sending the u
 *Note:* The 340k resistor on the charger (R13 in [its schematic](https://learn.adafruit.com/assets/17555)) has to be removed so that the enable-pin timer can work.
 
 ## Next steps
-- [ ] **Improve security:** Right now, the latch will unlock if it receives a message
-matching a static password, and it's sent in the clear... Not great! The LoRa
-modules implement AES encryption so a nice challenge-response authentication
-could even be possible! The absolute obscurity of this installation, combined
-with how often the door is propped open anyway, make this a less critical
-problem for the time being.
+- [x] **Improve security:** The modules implement a rolling code security system
+much like modern car keyless entry systems do. This hinges on the quality of the
+built-in AES encryption of the modules... but it's a million times better than
+the previous two iterations!
 - [x] **More efficient remote:** Add a battery and charger circuit so that the
 unlock code is only sent when the car is turned off.
 - [ ] **Unlock via internet:** Having a web API available to unlock would open up
