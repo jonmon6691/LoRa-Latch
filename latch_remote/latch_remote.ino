@@ -2,17 +2,26 @@
  *    LoRa beacon that announces it presence periodically
  *                   Jon Wallace 2020
  */
+ 
+#include <EEPROM.h>
+#include "secrets.h"
 
 #define MAX_RES_SIZE (8+5+1+3+1+240+1+3+1+2+2)
 char res_buff[MAX_RES_SIZE];
 int  res_i = 0;
 
-#include "password.h"
-
 #define BEACON_PERIOD_MS 1000 // Send ping every second
 unsigned long beacon;
 
 #define CAR_ON_PIN (7) // Connected to the "USB" pin on the boost/charger
+#define COUNTER_RESET_PIN 11
+#define COUNTER_RESET_GND_PIN 12
+
+bool lora_initd;
+
+#define COUNTER_ADDR (0) // Address of the counter in the EEPROM
+unsigned int counter;
+
 #define TRANSMIT_AFTER_CAR_OFF_MS (15000) // Stop transmitting 15 seconds after car is turned off
 unsigned long transmit_limit;
 
@@ -22,9 +31,18 @@ void setup() {
   Serial.println("Latch Remote");
   Serial.println("See https://github.com/jonmon6691/LoRa-Latch for documentation.");
   
+  lora_initd = false;
+  Serial.print("AT+RESET\r\n");
+  
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(CAR_ON_PIN, INPUT);
-  
+
+  pinMode(COUNTER_RESET_PIN, INPUT);      // Resets counter in EEPROM when shorted to GND
+  digitalWrite(COUNTER_RESET_PIN, HIGH);
+
+  digitalWrite(COUNTER_RESET_GND_PIN, LOW);    // Convinient GND for shorting the counter reset pin
+  pinMode(COUNTER_RESET_GND_PIN, OUTPUT);
+
   beacon = 0;
   transmit_limit = 0;
 }
@@ -40,10 +58,25 @@ void loop() {
     transmit_limit = now + TRANSMIT_AFTER_CAR_OFF_MS;
   }
 
-  if (car_on == LOW && now < transmit_limit && now > beacon) {
-    beacon = millis() + BEACON_PERIOD_MS;
-    Serial.print("AT+SEND=0," PASSWORD_LEN_STR "," PASSWORD "\r\n");
+  if (lora_initd && car_on == LOW && now < transmit_limit && now > beacon) {
+    beacon = now + BEACON_PERIOD_MS;
+    counter = EEPROM.get(COUNTER_ADDR, counter);
+
+    char buff[10 + 1 + SALT_LEN]; // MAX_INT + '|' + password
+    int len = sprintf(buff, "%u|%s", counter, SALT);
+    sprintf(res_buff, "AT+SEND=0,%d,%s\r\n", len, buff);
+
+    counter += 1;
+    EEPROM.put(COUNTER_ADDR, counter);
+
+    Serial.print(res_buff);
   }
+
+  if (digitalRead(COUNTER_RESET_PIN) == LOW) {
+    unsigned int counter = 1;
+    EEPROM.put(COUNTER_ADDR, counter);
+  }
+
 }
 
 void process_character(char next) {
@@ -73,7 +106,10 @@ const char *RES_STRINGS[N_RES] = {"+READY", "+ERR=", "+OK", "+RCV="};
 
 void process_response() {
   switch (parse_response()) {
-    case RES_READY: break;
+    case RES_READY: 
+      lora_initd = true;
+      Serial.print("AT+CPIN=" SECRET "\r\n");
+      break;
     case RES_ERR: break; //print_error(); break;
     case RES_OK: break;
     case RES_RCV: break;

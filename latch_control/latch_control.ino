@@ -4,6 +4,9 @@
  *          Jon Wallace 2020
  */
 
+#include <EEPROM.h>
+#include "secrets.h"
+
 #define MAX_RES_SIZE (263)
 char res_buff[MAX_RES_SIZE];
 int res_i = 0;
@@ -15,9 +18,15 @@ int rcv_data_offset;
 int rcv_rssi;
 int rcv_snr;
 
-#include "password.h"
 #define LATCH_PIN 8
 #define BUZZER_PIN 6
+#define COUNTER_RESET_PIN 11
+#define COUNTER_RESET_GND_PIN 12
+
+bool lora_initd;
+
+#define COUNTER_ADDR (0) // Address of the counter in the EEPROM
+#define ROLLING_WINDOW_SIZE (1000) // How far ahead the remote can be and still be valid
 
 #define RADIO_UNLOCK_TIME_MS ((unsigned long) 5*60*1000) // Buzzer unlock is active for 5 minutes since last radio contact
 #define HOLD_TIME_MS ((unsigned long) 1 * 1000) // Hold the door latch for 3 seconds after pressing the buzzer
@@ -30,6 +39,9 @@ void setup() {
   Serial.println("\n");
   Serial.println("Latch Controller");
   Serial.println("See https://github.com/jonmon6691/LoRa-Latch for documentation.");
+
+  lora_initd = false;
+  Serial.print("AT+RESET\r\n");
   
   pinMode(LED_BUILTIN, OUTPUT);
   
@@ -38,6 +50,12 @@ void setup() {
   
   pinMode(BUZZER_PIN, INPUT);      // Buzzer detect pull-up resistor
   digitalWrite(BUZZER_PIN, HIGH);
+
+  pinMode(COUNTER_RESET_PIN, INPUT);      // Resets counter in EEPROM when shorted to GND
+  digitalWrite(COUNTER_RESET_PIN, HIGH);
+
+  digitalWrite(COUNTER_RESET_GND_PIN, LOW);    // Convinient GND for shorting the counter reset pin
+  pinMode(COUNTER_RESET_GND_PIN, OUTPUT);
 
   radio_unlock = 0;
   hold_latch = 0;
@@ -74,6 +92,11 @@ void loop() {
     digitalWrite(LED_BUILTIN, LOW);
   }
 
+  if (digitalRead(COUNTER_RESET_PIN) == LOW) {
+    unsigned int counter = 0;
+    EEPROM.put(COUNTER_ADDR, counter);
+  }
+
 }
 
 void process_character(char next) {
@@ -83,6 +106,7 @@ void process_character(char next) {
   case 10: // Line feed
     res_buff[res_i++] = next;
     res_buff[res_i++] = '\0'; // Add a null termination for easy printing if need be
+    
     process_response();
     break;
     
@@ -106,17 +130,40 @@ const char *RES_STRINGS[N_RES] = {"+READY", "+ERR=", "+OK", "+RCV="};
 void process_response() {
   switch (parse_response()) {
     case RES_READY:
+      lora_initd = true;
+      Serial.print("AT+CPIN=" SECRET "\r\n");
       break;
       
     case RES_ERR: print_error(); break;
+    
     case RES_OK: Serial.println("RES_OK"); break;
     
     case RES_RCV:
       process_rcv();
-      if (rcv_len == PASSWORD_LEN && strncmp(res_buff+rcv_data_offset, PASSWORD, rcv_len) == 0) {
+     
+      // Load the last accepted counter
+      unsigned int eeprom_counter;
+      EEPROM.get(COUNTER_ADDR, eeprom_counter);
+     
+      // Parse the input
+      unsigned int rcv_counter;
+      int salt_offset;
+      int ret = sscanf(res_buff+rcv_data_offset, "%u|%n", &rcv_counter, &salt_offset);
+      if (ret != 1) break; // Check that sscanf succeeded
+      
+      rcv_data_offset += salt_offset;
+      rcv_len -= salt_offset;
+      if (eeprom_counter < rcv_counter && // Don't allow replays
+          rcv_counter < eeprom_counter + ROLLING_WINDOW_SIZE && // Limit how far ahead the remote can be
+          rcv_len == SALT_LEN &&
+          strncmp(res_buff+rcv_data_offset, SALT, rcv_len) == 0) // Check the salt
+      {
+        EEPROM.put(COUNTER_ADDR, rcv_counter);
         radio_unlock = millis() + RADIO_UNLOCK_TIME_MS;
-        Serial.print("Unlocking until ");
-        Serial.println(radio_unlock);
+        Serial.print("Access granted, counter: ");
+        Serial.print(eeprom_counter);
+        Serial.print(" -> ");
+        Serial.println(rcv_counter);
       }
       break;
       
@@ -146,7 +193,7 @@ parse_response_match:
 void process_rcv() {
   sscanf(res_buff + RES_RCV_OFFSET, "%d,%d,%n", &rcv_addr, &rcv_len, &rcv_data_offset);
   rcv_data_offset += RES_RCV_OFFSET; // Add in the offset for convenience
-  sscanf(res_buff + rcv_data_offset, ",%d,%d", &rcv_rssi, &rcv_snr);
+  sscanf(res_buff + rcv_data_offset + rcv_len, ",%d,%d", &rcv_rssi, &rcv_snr);
 }
 
 void print_error() {
