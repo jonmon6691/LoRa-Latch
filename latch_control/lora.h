@@ -61,10 +61,8 @@ void process_character(char next) {
 #define RES_RCV 3
 #define N_RES 4
 const char *RES_STRINGS[N_RES] = {"+READY", "+ERR=", "+OK", "+RCV="};
-#define RES_ERR_OFFSET 5
-#define RES_RCV_OFFSET 5
-
-
+#define RES_ERR_LEN 5
+#define RES_RCV_LEN 5
 int parse_response() {
   int res;
   for (res = 0; res < N_RES; res++) { // for each known response string
@@ -81,14 +79,14 @@ parse_response_match:
 
 void process_rcv() {
   int rcv_data_offset;
-  sscanf(res_buff + RES_RCV_OFFSET, "%d,%d,%n", &rcv_addr, &rcv_data_len, &rcv_data_offset);
-  rcv_data = res_buff + RES_RCV_OFFSET + rcv_data_offset;
+  sscanf(res_buff + RES_RCV_LEN, "%d,%d,%n", &rcv_addr, &rcv_data_len, &rcv_data_offset);
+  rcv_data = res_buff + RES_RCV_LEN + rcv_data_offset;
   sscanf(rcv_data + rcv_data_len, ",%d,%d", &rcv_rssi, &rcv_snr);
 }
 
 void print_error() {
   int err;
-  sscanf(res_buff + RES_ERR_OFFSET, "%d", &err);
+  sscanf(res_buff + RES_ERR_LEN, "%d", &err);
   switch(err) {
     default:
     case -1: // Couldn't parse the error number

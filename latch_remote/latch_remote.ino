@@ -1,6 +1,6 @@
-/********************** latch_remote ************************
- *    LoRa beacon that announces it presence periodically
- *                   Jon Wallace 2020
+/*************** latch_remote *****************
+ *    A remote rolling code transmitter
+ *            Jon Wallace 2020
  */
  
 #include <EEPROM.h>
@@ -32,10 +32,10 @@ void setup() {
   
   pinMode(CAR_ON_PIN, INPUT);
 
-  pinMode(COUNTER_RESET_PIN, INPUT);      // Resets counter in EEPROM when shorted to GND
+  pinMode(COUNTER_RESET_PIN, INPUT); // Resets counter in EEPROM when shorted to GND
   digitalWrite(COUNTER_RESET_PIN, HIGH);
 
-  digitalWrite(COUNTER_RESET_GND_PIN, LOW);    // Convinient GND for shorting the counter reset pin
+  digitalWrite(COUNTER_RESET_GND_PIN, LOW); // Convinient GND for shorting the counter reset pin
   pinMode(COUNTER_RESET_GND_PIN, OUTPUT);
 
   clear_timer(&beacon_timeout);
@@ -46,6 +46,9 @@ void loop() {
   char next = Serial.read();
   process_character(next);
 
+  // Don't do anything until the LoRa module is initialized
+  if (lora_initialized == false) return; 
+
   bool car_on = digitalRead(CAR_ON_PIN);
   unsigned long now = millis();
   
@@ -53,13 +56,12 @@ void loop() {
     set_timer(&transmit_timer, now, TRANSMIT_AFTER_CAR_OFF_MS);
   }
 
-  bool transmit = timer(transmit_timer, now);
-  bool timeout = timer(beacon_timeout, now);
+  bool transmit = check_timer(transmit_timer, now);
+  bool wait_for_timeout = check_timer(beacon_timeout, now);
 
-  if (lora_initialized == true && 
-      car_on == LOW &&
-      transmit == true &&
-      timeout == false) {
+  if (car_on == LOW &&
+      transmit &&
+      wait_for_timeout == false) {
     Serial.println("Sending");
     set_timer(&beacon_timeout, now, BEACON_PERIOD_MS);
     

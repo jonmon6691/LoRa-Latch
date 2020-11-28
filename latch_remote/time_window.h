@@ -7,7 +7,7 @@ struct timer {
 };
 
 
-/* timer - handles the possbility of an overflow in a timer
+/* check_timer - handles the possbility of an overflow in a timer
 Truth table: ([s]tart, [n]ow, [e]nd)
 0                    Max
 |.....s--n-----e.....| true
@@ -16,7 +16,7 @@ Truth table: ([s]tart, [n]ow, [e]nd)
 |-n-e...........s----| true
 |---e.n.........s----| false
 */
-bool timer(struct timer t, unsigned long now) {
+bool check_timer(struct timer t, unsigned long now) {
   if (t.start_time <= t.end_time) { // No overflow
     return now <= t.end_time && t.start_time < now;
   } else { // Overflow
